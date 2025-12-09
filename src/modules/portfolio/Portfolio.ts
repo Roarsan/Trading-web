@@ -32,7 +32,7 @@ export class Portfolio {
         }else{
             return;
         }
-        if (existing.quantity=0){
+        if (existing.quantity<=0){
             this.holdings = this.holdings.filter((h)=>h.symbol!==symbol);
         }
 

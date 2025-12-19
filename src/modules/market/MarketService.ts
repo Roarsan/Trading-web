@@ -1,10 +1,10 @@
 import { Stock } from "./Stock";
 
 export class MarketService {
-    private stocks: Stock[] = [];
 
+    private stocks: Stock[] = [];
     constructor() {
-        // Seed market with initial data
+        // Seed MarketService with initial data
         this.stocks = [
             new Stock("AAPL", "Apple Inc.", 150),
             new Stock("TSLA", "Tesla Motors", 220),
@@ -29,4 +29,11 @@ export class MarketService {
         });
     }
 }
-export const marketService = new MarketService();
+
+let marketService: MarketService | null = null;
+export function getMarketService() {
+    if (!marketService) {
+        marketService = new MarketService();
+    }
+    return marketService;
+}

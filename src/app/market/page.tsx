@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
-import { marketService } from "@/modules/market/MarketService";
+import {  getMarketService } from "@/modules/market/MarketService";
 import { Stock } from "@/modules/market/Stock";
 export default function MarketPage() {
     const [stocks, setStocks] = useState<Stock[]>([]);
+    const marketService = getMarketService();
 
     useEffect(() => {
-        setStocks([...marketService.getStocks()]);
+        setStocks([... marketService.getStocks()]);
 
         const interval = setInterval(() => {
             marketService.simulatePrices();

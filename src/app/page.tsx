@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Stock } from "@/modules/market/Stock";
-import { marketService, MarketService } from "@/modules/market/MarketService";
+import { getMarketService, MarketService } from "@/modules/market/MarketService";
 export default function Page() {
   const [stocks, setStocks] = useState<Stock[]>([]);
+  const marketService = getMarketService();
 
   useEffect(() => {
     setStocks([...marketService.getStocks()]);
@@ -15,6 +16,7 @@ export default function Page() {
 
     return () => clearInterval(interval);
   }, []);
+  
   return (
     <main className="p-6 space-y-12">
       {/* Hero Section */}
@@ -47,6 +49,7 @@ export default function Page() {
           </div>
         ))}
       </section>
+
     </main>
   );
 }

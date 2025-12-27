@@ -2,7 +2,7 @@
 
 import { Order } from "./Order";
 import { Portfolio } from "../portfolio/Portfolio";
-import { marketService } from "../market/MarketService";
+import { getMarketService } from "../market/MarketService";
 
 class OrderService {
   private portfolio = new Portfolio();
@@ -12,8 +12,12 @@ class OrderService {
   }
 
   execute(order: Order) {
-    const stock = marketService.getStock(order.symbol);
-    if (!stock) return;
+
+    const stock = getMarketService().getStock(order.symbol);
+
+    if (!stock) {
+      return { success: false, message: `Stock ${order.symbol} not found in market` };
+    }
 
     if (order.type === "BUY") {
       this.portfolio.addStock(order.symbol, order.quantity, stock.price);
@@ -25,4 +29,10 @@ class OrderService {
   }
 }
 
-export const orderService = new OrderService();
+let orderService: OrderService | null = null;
+export function getOrderService() {
+  if (!orderService) {
+    orderService = new OrderService();
+  }
+  return orderService;
+}

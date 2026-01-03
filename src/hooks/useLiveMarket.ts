@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMarketService } from "@/modules/market/MarketService";
-import { Stock } from "@/modules/market/Stock";
+import { getMarketService } from "@/domain/market/MarketService";
+import { Stock } from "@/domain/market/Stock";
 
 export function useLiveMarket(intervalMs = 1000) {
   const [stocks, setStocks] = useState<Stock[]>([]);

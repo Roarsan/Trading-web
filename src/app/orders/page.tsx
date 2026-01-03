@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Order, OrderType } from "@/modules/orders/Order";
-import { getOrderService } from "@/modules/orders/OrderService";
+import { Order, OrderType } from "@/domain/orders/Order";
+import { getOrderService } from "@/domain/orders/OrderService";
 
 export default function OrdersPage() {
   const [symbol, setSymbol] = useState("");

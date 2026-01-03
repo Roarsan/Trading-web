@@ -7,7 +7,7 @@ export function Navigation() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/", label: "Dashboard" },
+    { href: "/", label: "Home" },
     { href: "/market", label: "Market" },
     { href: "/orders", label: "Orders" },
     { href: "/portfolio", label: "Portfolio" },

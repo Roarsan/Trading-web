@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getOrderService } from "@/modules/orders/OrderService";
-import { getMarketService } from "@/modules/market/MarketService";
+import { getOrderService } from "@/domain/orders/OrderService";
+import { getMarketService } from "@/domain/market/MarketService";
 
 export interface PortfolioRow {
   symbol: string;

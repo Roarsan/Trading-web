@@ -1,54 +1,9 @@
 "use client";
-import { getOrderService } from "@/modules/orders/OrderService";
-import { useState, useEffect } from "react";
-import { getMarketService } from "@/modules/market/MarketService";
-
-interface PortfolioRow {
-    symbol: string;
-    quantity: number;
-    avgPrice: number;
-    currentPrice: number;
-    profitLoss: number;
-}
+import { usePortfolio } from "@/hooks/usePortfolio";
 
 
 export default function PortfolioPage() {
-    const [rows, setRows] = useState<PortfolioRow[]>([]);
-    const marketService = getMarketService();
-    const orderService = getOrderService();
-
-    const updatePortfolio = () => {
-        const holdings = orderService.getPortfolio().getHoldings().filter(h => h.quantity > 0);
-
-        const updatedRows = holdings.map((h): PortfolioRow => {
-            const stock = marketService.getStock(h.symbol);
-            const currentPrice = stock ? stock.price : 0;
-            const profitLoss = (currentPrice - h.avgPrice) * h.quantity;
-
-            return {
-                symbol: h.symbol,
-                quantity: h.quantity,
-                avgPrice: h.avgPrice,
-                currentPrice,
-                profitLoss,
-            };
-
-        });
-        setRows(updatedRows);
-    };
-    useEffect(() => {
-        // Initial load
-        updatePortfolio();
-
-        // Update every second for live P/L changes
-        const interval = setInterval(() => {
-            marketService.simulatePrices();
-            updatePortfolio();
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
-
+    const rows = usePortfolio();
     return (
         <main className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
             <div className="max-w-7xl mx-auto">

@@ -1,22 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
-import {  getMarketService } from "@/modules/market/MarketService";
-import { Stock } from "@/modules/market/Stock";
+import { useLiveMarket } from "../../hooks/useLiveMarket";
 export default function MarketPage() {
-    const [stocks, setStocks] = useState<Stock[]>([]);
-    const marketService = getMarketService();
-
-    useEffect(() => {
-        setStocks([... marketService.getStocks()]);
-
-        const interval = setInterval(() => {
-            marketService.simulatePrices();
-            setStocks([...marketService.getStocks()]);
-
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [])
+    const stocks = useLiveMarket();
     return (
         <main className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
             <div className="max-w-7xl mx-auto">

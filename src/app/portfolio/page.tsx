@@ -1,17 +1,20 @@
 "use client";
 import { usePortfolio } from "@/hooks/usePortfolio";
-
+import { ErrorDisplay } from "@/components/ErrorDisplay";
 
 export default function PortfolioPage() {
-    const rows = usePortfolio();
+    const { rows, error } = usePortfolio();
+    
     return (
         <main className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
             <div className="max-w-7xl mx-auto">
                 <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Portfolio</h1>
 
+                {error && <div className="mb-6"><ErrorDisplay error={error} title="Portfolio Error" /></div>}
+
                 {/* Holdings Table */}
                 <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
-                    {rows.length === 0 ? (
+                    {rows.length === 0 && !error ? (
                         <div className="p-12 text-center">
                             <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

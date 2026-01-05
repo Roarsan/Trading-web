@@ -1,3 +1,5 @@
+import { InsufficientQuantityError, HoldingNotFoundError } from "../errors/ExpectedError";
+
 export interface Holding {
   symbol: string;
   quantity: number;
@@ -62,11 +64,13 @@ export class Portfolio {
   
   removeStock(symbol: string, quantity: number) {
     const existing = this.holdings.find((h) => h.symbol === symbol);
-    if (existing) {
-      existing.quantity -= quantity;
-    } else {
-      return;
+    if (!existing) {
+      throw new HoldingNotFoundError(symbol);
     }
+    if (existing.quantity < quantity) {
+      throw new InsufficientQuantityError(symbol, existing.quantity, quantity);
+    }
+    existing.quantity -= quantity;
     if (existing.quantity <= 0) {
       this.holdings = this.holdings.filter((h) => h.symbol !== symbol);
     }

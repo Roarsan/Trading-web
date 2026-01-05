@@ -3,31 +3,54 @@
 import { useState } from "react";
 import { Order, OrderType } from "@/domain/orders/Order";
 import { getOrderService } from "@/domain/orders/OrderService";
+import { ErrorPopup } from "@/components/ErrorPopup";
+import { ValidationError, ExpectedError } from "@/domain/errors/ExpectedError";
+
+/**
+ * Helper to check if an error is expected (should be handled in UI)
+ */
+function isExpectedError(err: unknown): err is ExpectedError {
+  return err instanceof ExpectedError;
+}
 
 export default function OrdersPage() {
   const [symbol, setSymbol] = useState("");
   const [quantity, setQuantity] = useState<number>(0);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState<Error | null>(null);
   const orderService = getOrderService();
 
   const submitOrder = (type: OrderType) => {
+    setError(null);
+    setMessage("");
     
+    // Validation errors are expected and should be shown in UI
     if (!symbol || quantity <= 0) {
-      setMessage("Please enter valid symbol and quantity.");
+      setError(new ValidationError("Please enter valid symbol and quantity."));
       return;
     }
 
-    const order = new Order(symbol.toUpperCase(), quantity, type);
-    orderService.execute(order);
+    try {
+      const order = new Order(symbol.toUpperCase(), quantity, type);
+      orderService.execute(order);
 
-    setMessage(`Successfully executed ${type} order for ${quantity} shares of ${symbol.toUpperCase()}`);
-
-    setSymbol("");
-    setQuantity(0);
+      setMessage(`Successfully executed ${type} order for ${quantity} shares of ${symbol.toUpperCase()}`);
+      setSymbol("");
+      setQuantity(0);
+    } catch (err) {
+      if (isExpectedError(err)) {
+        setError(err);
+        setMessage("");
+      } else {
+        throw err;
+      }
+    }
   };
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
+      <ErrorPopup error={error} onClose={() => setError(null)} />
+      
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Place an Order</h1>
 

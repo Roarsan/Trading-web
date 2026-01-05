@@ -22,6 +22,7 @@ export class MarketService {
     }
 
     simulatePrices() {
+
         // Random walk algorithm
         this.stocks.forEach((stock) => {
             const movement = (Math.random() - 0.5) * 2; // -1 to +1

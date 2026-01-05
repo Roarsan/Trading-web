@@ -1,8 +1,9 @@
-// modules/orders/OrderService.ts
+
 
 import { Order } from "./Order";
 import { Portfolio } from "../portfolio/Portfolio";
 import { getMarketService } from "../market/MarketService";
+import { StockNotFoundError } from "../errors/ExpectedError";
 
 class OrderService {
   private portfolio = new Portfolio();
@@ -12,11 +13,10 @@ class OrderService {
   }
 
   execute(order: Order) {
-
     const stock = getMarketService().getStock(order.symbol);
 
     if (!stock) {
-      return { success: false, message: `Stock ${order.symbol} not found in market` };
+      throw new StockNotFoundError(order.symbol);
     }
 
     if (order.type === "BUY") {

@@ -1,62 +1,20 @@
 "use client";
-import { getOrderService } from "@/modules/orders/OrderService";
-import { useState, useEffect } from "react";
-import { getMarketService } from "@/modules/market/MarketService";
-
-interface PortfolioRow {
-    symbol: string;
-    quantity: number;
-    avgPrice: number;
-    currentPrice: number;
-    profitLoss: number;
-}
-
+import { usePortfolio } from "@/hooks/usePortfolio";
+import { ErrorDisplay } from "@/components/ErrorDisplay";
 
 export default function PortfolioPage() {
-    const [rows, setRows] = useState<PortfolioRow[]>([]);
-    const marketService = getMarketService();
-    const orderService = getOrderService();
-
-    const updatePortfolio = () => {
-        const holdings = orderService.getPortfolio().getHoldings().filter(h => h.quantity > 0);
-
-        const updatedRows = holdings.map((h): PortfolioRow => {
-            const stock = marketService.getStock(h.symbol);
-            const currentPrice = stock ? stock.price : 0;
-            const profitLoss = (currentPrice - h.avgPrice) * h.quantity;
-
-            return {
-                symbol: h.symbol,
-                quantity: h.quantity,
-                avgPrice: h.avgPrice,
-                currentPrice,
-                profitLoss,
-            };
-
-        });
-        setRows(updatedRows);
-    };
-    useEffect(() => {
-        // Initial load
-        updatePortfolio();
-
-        // Update every second for live P/L changes
-        const interval = setInterval(() => {
-            marketService.simulatePrices();
-            updatePortfolio();
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
-
+    const { rows, error } = usePortfolio();
+    
     return (
         <main className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
             <div className="max-w-7xl mx-auto">
                 <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Portfolio</h1>
 
+                {error && <div className="mb-6"><ErrorDisplay error={error} title="Portfolio Error" /></div>}
+
                 {/* Holdings Table */}
                 <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
-                    {rows.length === 0 ? (
+                    {rows.length === 0 && !error ? (
                         <div className="p-12 text-center">
                             <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

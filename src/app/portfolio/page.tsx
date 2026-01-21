@@ -1,6 +1,6 @@
 "use client";
-import { usePortfolio } from "@/hooks/usePortfolio";
-import { ErrorDisplay } from "@/components/ui/ErrorDisplay";
+import { usePortfolio } from "@/app-core/hooks/usePortfolio";
+import { ErrorDisplay } from "@/components/error/ErrorDisplay";
 
 export default function PortfolioPage() {
     const { rows, error } = usePortfolio();

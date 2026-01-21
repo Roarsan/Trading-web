@@ -1,5 +1,5 @@
 "use client";
-import { usePortfolio } from "@/app-core/hooks/usePortfolio";
+import { usePortfolio } from "@/hooks/usePortfolio";
 import { ErrorDisplay } from "@/components/error/ErrorDisplay";
 
 export default function PortfolioPage() {

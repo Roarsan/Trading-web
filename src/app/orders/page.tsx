@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Order, OrderType } from "@/domain/orders/Order";
 import { getOrderService } from "@/domain/orders/OrderService";
-import { ErrorPopup } from "@/components/ErrorPopup";
+import { ErrorPopup } from "@/components/error/ErrorPopup";
 import { ValidationError, ExpectedError } from "@/domain/errors/ExpectedError";
 
 /**

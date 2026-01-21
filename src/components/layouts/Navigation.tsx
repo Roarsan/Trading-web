@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AuthButton from "./AuthButton";
 
 export function Navigation() {
   const pathname = usePathname();
@@ -18,7 +19,7 @@ export function Navigation() {
     <nav className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+          {/* Left: Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
@@ -30,7 +31,7 @@ export function Navigation() {
             </Link>
           </div>
 
-          {/* Navigation Links */}
+          {/* Middle: Nav links */}
           <div className="flex items-center space-x-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -49,9 +50,13 @@ export function Navigation() {
               );
             })}
           </div>
+
+          {/* Right: Auth */}
+          <div className="flex items-center gap-3">
+            <AuthButton />
+          </div>
         </div>
       </div>
     </nav>
   );
 }
-

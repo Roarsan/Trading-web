@@ -1,6 +1,6 @@
 "use client";
-import { useLiveMarket } from "../../hooks/useLiveMarket";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { useLiveMarket } from "@/hooks/useLiveMarket";
+import { ErrorDisplay } from "@/components/error/ErrorDisplay";
 
 export default function MarketPage() {
     const { stocks, error } = useLiveMarket();

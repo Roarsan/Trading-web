@@ -1,38 +1,17 @@
-
-
-import { Order } from "./Order";
 import { Portfolio } from "../portfolio/Portfolio";
-import { getMarketService } from "../market/MarketService";
-import { StockNotFoundError } from "../errors/ExpectedError";
-
-class OrderService {
-  private portfolio = new Portfolio();
-
-  getPortfolio() {
-    return this.portfolio;
-  }
-
-  execute(order: Order) {
-    const stock = getMarketService().getStock(order.symbol);
-
-    if (!stock) {
-      throw new StockNotFoundError(order.symbol);
-    }
+import type { Holding } from "@/shared/types/portfolio";
+import type { Order } from "./Order";
+export class OrderService {
+  execute(holdings: Holding[], order: Order): Holding[] {
+    const portfolio = new Portfolio(holdings);
 
     if (order.type === "BUY") {
-      this.portfolio.addStock(order.symbol, order.quantity, stock.price);
+      portfolio.addStock(order.symbol, order.quantity, order.price);
     }
 
     if (order.type === "SELL") {
-      this.portfolio.removeStock(order.symbol, order.quantity);
+      portfolio.removeStock(order.symbol, order.quantity);
     }
+    return portfolio.getHoldings();
   }
-}
-
-let orderService: OrderService | null = null;
-export function getOrderService() {
-  if (!orderService) {
-    orderService = new OrderService();
-  }
-  return orderService;
 }

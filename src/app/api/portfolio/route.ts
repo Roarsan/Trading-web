@@ -9,7 +9,7 @@ export const GET = withApiError(async () => {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    throw error;
+    throw unauthorized("Unauthorized");
   }
 
   const holdings = await getHoldingsByUserId(session.user.id);

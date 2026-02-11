@@ -1,48 +1,68 @@
 "use client";
 
 import { useState } from "react";
-import { Order, OrderType } from "@/domain/orders/Order";
-import { getOrderService } from "@/domain/orders/OrderService";
-import { ErrorPopup } from "@/components/error/ErrorPopup";
-import { ValidationError, ExpectedError } from "@/domain/errors/ExpectedError";
+import { ErrorPopup } from "@/client/components/error/ErrorPopup";
+import { ValidationError, ExpectedError } from "@/domain/expectedError/ExpectedError";
+import { OrderType } from "@/domain/orders/Order";
+import { placeOrder } from "../../client/services/orderApi";
+import { useLiveMarket } from "@/client/hooks/useLiveMarket";
 
-/**
- * Helper to check if an error is expected (should be handled in UI)
- */
 function isExpectedError(err: unknown): err is ExpectedError {
   return err instanceof ExpectedError;
 }
 
 export default function OrdersPage() {
+  const [error, setError] = useState<Error | null>(null);
+  const { stocks, error: marketError } = useLiveMarket();
+
+  const [message, setMessage] = useState("");
   const [symbol, setSymbol] = useState("");
   const [quantity, setQuantity] = useState<number>(0);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState<Error | null>(null);
-  const orderService = getOrderService();
 
-  const submitOrder = (type: OrderType) => {
+
+  const submitOrder = async (type: OrderType) => {
     setError(null);
     setMessage("");
-    
-    // Validation errors are expected and should be shown in UI
-    if (!symbol || quantity <= 0) {
+
+    if (marketError) {
+      setError(marketError);
+      return;
+    }
+
+    const normalizedSymbol = symbol.trim().toUpperCase();
+
+    if (!normalizedSymbol || quantity <= 0) {
       setError(new ValidationError("Please enter valid symbol and quantity."));
       return;
     }
 
-    try {
-      const order = new Order(symbol.toUpperCase(), quantity, type);
-      orderService.execute(order);
+    const marketStock = stocks.find((stock) => stock.symbol === normalizedSymbol);
+    if (!marketStock) {
+      setError(new ValidationError("Symbol not found in live market data."));
+      return;
+    }
 
-      setMessage(`Successfully executed ${type} order for ${quantity} shares of ${symbol.toUpperCase()}`);
+    try {
+      await placeOrder({
+        symbol,
+        quantity,
+        type,
+        price: marketStock.price,
+      });
+
+      setMessage(
+        `Successfully executed ${type} order for ${quantity} shares of ${symbol}`
+      );
       setSymbol("");
       setQuantity(0);
     } catch (err) {
       if (isExpectedError(err)) {
         setError(err);
         setMessage("");
+      } else if (err instanceof Error) {
+        setError(new ValidationError(err.message));
       } else {
-        throw err;
+        setError(new ValidationError("Something went wrong"));
       }
     }
   };
@@ -50,9 +70,11 @@ export default function OrdersPage() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
       <ErrorPopup error={error} onClose={() => setError(null)} />
-      
+
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Place an Order</h1>
+        <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">
+          Place an Order
+        </h1>
 
         {message && (
           <div className="mb-6 p-4 border border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300">
@@ -60,7 +82,6 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {/* Order Form */}
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm p-8 space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

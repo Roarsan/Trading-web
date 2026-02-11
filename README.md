@@ -1,36 +1,179 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📈 TradingApp
 
-## Getting Started
+A modern trading simulator that lets users track a live‑simulated market, place buy/sell orders, and monitor portfolio performance. Built with Next.js, Prisma, and NextAuth in a clean domain‑driven structure.
 
-First, run the development server:
+## ✨ Live Demo
+
+Run locally at:
+
+```text
+http://localhost:3000
+```
+
+## 🚀 Tech Stack
+
+### Backend
+- **Next.js App Router** — API routes and server rendering
+- **NextAuth** — Google OAuth + database sessions
+- **Prisma** — Database ORM
+- **PostgreSQL** — Relational database
+- **Zod** — Request validation
+
+### Frontend
+- **React 19** — UI rendering
+- **Tailwind CSS** — Styling
+- **Custom Hooks** — Live market + portfolio data
+
+## 🧩 Features
+
+### Core Functionality
+- ✅ **Google Sign‑In** — Authenticated user sessions
+- ✅ **Live Market Simulation** — In‑memory price updates
+- ✅ **Place Orders** — Buy/Sell stocks with validation
+- ✅ **Portfolio Dashboard** — Avg cost, current price, P/L
+- ✅ **Watchlist UI** — UI scaffold for adding stocks
+- ✅ **Centralized API Errors** — Consistent error response shape
+
+### UI/UX
+- 🎨 **Modern UI** — Clean, minimal styling
+- 📱 **Responsive Layout** — Works across devices
+
+## ✅ Prerequisites
+
+- **Node.js (LTS recommended)**
+- **PostgreSQL** database
+- **Google OAuth credentials** (client ID + secret)
+
+## 🚀 Development & Setup
+
+### 1. Install
+
+```bash
+npm install
+```
+
+### 2. Environment Setup
+
+Create a `.env` file in the project root:
+
+```bash
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DBNAME
+GOOGLE_ID=your-google-client-id
+GOOGLE_SECRET=your-google-client-secret
+NEXTAUTH_SECRET=your-random-secret
+```
+
+### 3. Database Setup
+
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
+
+### 4. Run the App
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🌐 App Routes
 
-## Learn More
+| Route | Description |
+| --- | --- |
+| `/` | Landing page |
+| `/market` | Live market prices |
+| `/orders` | Place buy/sell orders |
+| `/portfolio` | Holdings and P/L |
+| `/watchlist` | Watchlist UI |
 
-To learn more about Next.js, take a look at the following resources:
+## 🌐 API Routes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Method | Route | Description |
+| --- | --- | --- |
+| GET | `/api/portfolio` | Get holdings for current user |
+| POST | `/api/orders` | Place a buy/sell order |
+| GET/POST | `/api/auth/[...nextauth]` | NextAuth handlers |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🗄️ Database Schema (Prisma)
 
-## Deploy on Vercel
+### User
+```prisma
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String?  @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  holdings      Holding[]
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Holding
+```prisma
+model Holding {
+  id       String @id @default(cuid())
+  userId   String
+  symbol   String
+  quantity Int
+  avgPrice Float
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, symbol])
+}
+```
+
+## 🧱 Project Structure
+
+```
+src/
+├── app/            # Next.js routes and pages
+├── client/         # Client hooks and API wrappers
+├── domain/         # Domain models and errors
+├── server/         # Server-side services and auth
+├── shared/         # Shared types
+prisma/             # Prisma schema + migrations
+```
+
+## 🔧 Architecture & Patterns
+
+- **Domain‑driven structure** for core logic (`src/domain`).
+- **Service layer** for database updates (`src/server`).
+- **API routes** with centralized error handling (`withApiError`).
+- **Zod** for request validation.
+
+## 🛡️ Error Handling & Validation
+
+### Error Response Shape
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request",
+    "details": {}
+  }
+}
+```
+
+### Validation
+- Orders are validated with **Zod**.
+- Invalid requests return consistent `400` errors.
+
+## 🔒 Security Considerations
+
+- OAuth handled by **NextAuth**.
+- Sessions stored in Postgres via Prisma adapter.
+- Environment secrets validated at startup.
+
+## 📌 Notes
+
+- Market prices are simulated in‑memory for demo purposes.
+- Orders are processed per‑user and persisted in Postgres.
+

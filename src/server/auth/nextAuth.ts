@@ -1,5 +1,7 @@
 import { type NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { prisma } from "@/server/db/prisma";
 
 function requireEnv(key: string) {
   const value = process.env[key];
@@ -16,12 +18,21 @@ const env = {
 };
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
       clientId: env.googleId,
       clientSecret: env.googleSecret,
     }),
   ],
-  session: { strategy: "jwt" },
+  session: { strategy: "database" },
   secret: env.nextAuthSecret,
+  callbacks: {
+    async session({ session, user }) {
+      if (session.user) {
+        session.user.id = user.id;
+      }
+      return session;
+    },
+  }
 };

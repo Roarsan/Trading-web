@@ -2,7 +2,6 @@ import { ValidationError } from "@/domain/expectedError/ExpectedError";
 import type { Order} from "@/domain/orders/Order";
 
 export async function placeOrder(input: Order) {
-
   const res = await fetch("/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -16,7 +15,8 @@ export async function placeOrder(input: Order) {
 
   const data = await res.json();
   if (!res.ok) {
-    throw new ValidationError(data?.error ?? "Order failed");
+    const message = data?.error?.message ?? data?.error ?? "Order failed";
+    throw new ValidationError(message);
   }
 
 }

@@ -5,7 +5,8 @@ export async function fetchHoldings(): Promise<Holding[]> {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data?.error ?? "Failed to load portfolio");
+    const message = data?.error?.message ?? data?.error ?? "Failed to load portfolio";
+    throw new Error(message);
   }
 
   const holdings = (data?.holdings ?? []) as Holding[];

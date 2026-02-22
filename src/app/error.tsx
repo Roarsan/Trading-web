@@ -15,11 +15,11 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-6">
-      <div className="max-w-md w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg p-8 text-center">
-        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+    <div className="page-center">
+      <div className="card card-shadow-lg card-padded-lg text-center max-w-md w-full">
+        <div className="icon-circle-error">
           <svg
-            className="w-8 h-8 text-red-600 dark:text-red-400"
+            className="w-8 h-8 icon-error"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -35,19 +35,19 @@ export default function Error({
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Something went wrong!
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-muted mb-6">
           {error.message || "An unexpected error occurred"}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
             onClick={reset}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+            className="button button-blue button-compact"
           >
             Try again
           </button>
           <Link
             href="/"
-            className="px-4 py-2 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-900 dark:text-white font-semibold rounded-lg transition-colors"
+            className="button button-gray button-compact"
           >
             Go home
           </Link>
@@ -56,4 +56,3 @@ export default function Error({
     </div>
   );
 }
-

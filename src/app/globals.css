@@ -129,16 +129,12 @@ body {
     @apply space-y-6;
   }
 
-  .row {
-    @apply flex;
-  }
-
   .row-gap {
     @apply flex space-x-4;
   }
 
-  .row-justify {
-    @apply flex justify-between items-center;
+  .row-gap-center {
+    @apply flex items-center gap-4;
   }
 
   .form-label {
@@ -235,10 +231,6 @@ body {
 
   .icon-circle-sm {
     @apply w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center;
-  }
-
-  .icon-circle-md {
-    @apply w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center;
   }
 
   .icon-circle-error {

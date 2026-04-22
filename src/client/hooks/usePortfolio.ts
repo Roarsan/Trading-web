@@ -44,12 +44,10 @@ export function usePortfolio(intervalMs = 1000) {
       if (requestId !== requestIdRef.current) return;
       if (err instanceof Error) {
         setError(err);
-        setRows([]);
         return;
       }
 
       setError(new Error("Unknown error"));
-      setRows([]);
     }
   }, [marketSimulation]);
 

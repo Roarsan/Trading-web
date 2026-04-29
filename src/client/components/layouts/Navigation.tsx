@@ -12,7 +12,6 @@ export function Navigation() {
     { href: "/market", label: "Market" },
     { href: "/orders", label: "Orders" },
     { href: "/portfolio", label: "Portfolio" },
-    { href: "/watchlist", label: "Watchlist" },
   ];
 
   return (

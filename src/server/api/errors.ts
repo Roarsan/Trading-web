@@ -68,14 +68,14 @@ export function handleApiError(err: unknown): Response {
   return NextResponse.json(payload, { status: 500 });
 }
 
-export function withApiError<T extends (...args: any[]) => Promise<Response>>(
-  handler: T,
-): T {
-  return (async (...args: Parameters<T>) => {
+export function withApiError<TArgs extends unknown[]>(
+  handler: (...args: TArgs) => Promise<Response>,
+): (...args: TArgs) => Promise<Response> {
+  return async (...args: TArgs) => {
     try {
       return await handler(...args);
     } catch (err) {
       return handleApiError(err);
     }
-  }) as T;
+  };
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getMarketSimulation } from "@/client/services/marketSimulation";
 import { fetchHoldings } from "@/client/services/portfolioApi";
+import { useLiveMarket } from "@/client/hooks/useLiveMarket";
 
 export interface PortfolioRow {
   symbol: string;
@@ -17,7 +17,7 @@ export function usePortfolio(intervalMs = 1000) {
   const [error, setError] = useState<Error | null>(null);
   const requestIdRef = useRef(0);
 
-  const marketSimulation = getMarketSimulation();
+  const { stocks, error: marketError } = useLiveMarket();
 
   const updatePortfolio = useCallback(async () => {
     const requestId = ++requestIdRef.current;
@@ -25,8 +25,9 @@ export function usePortfolio(intervalMs = 1000) {
       const holdings = await fetchHoldings();
       if (requestId !== requestIdRef.current) return;
 
+      const stockBySymbol = new Map(stocks.map((stock) => [stock.symbol, stock]));
       const updatedRows: PortfolioRow[] = holdings.map((h) => {
-        const stock = marketSimulation.getStock(h.symbol);
+        const stock = stockBySymbol.get(h.symbol);
         const currentPrice = stock ? stock.price : 0;
 
         return {
@@ -39,7 +40,7 @@ export function usePortfolio(intervalMs = 1000) {
       });
 
       setRows(updatedRows);
-      setError(null);
+      setError(marketError);
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
       if (err instanceof Error) {
@@ -51,22 +52,18 @@ export function usePortfolio(intervalMs = 1000) {
       setError(new Error("Unknown error"));
       setRows([]);
     }
-  }, [marketSimulation]);
+  }, [stocks, marketError]);
 
   useEffect(() => {
-    updatePortfolio();
+    const initialId = window.setTimeout(updatePortfolio, 0);
 
-    const id = setInterval(() => {
-      try {
-        marketSimulation.simulatePrices();
-        updatePortfolio();
-      } catch (err) {
-        console.error("Unexpected error in portfolio update interval:", err);
-      }
-    }, intervalMs);
+    const id = setInterval(updatePortfolio, intervalMs);
 
-    return () => clearInterval(id);
-  }, [intervalMs, marketSimulation, updatePortfolio]);
+    return () => {
+      window.clearTimeout(initialId);
+      clearInterval(id);
+    };
+  }, [intervalMs, updatePortfolio]);
 
   return { rows, error };
 }

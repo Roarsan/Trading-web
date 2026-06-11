@@ -1,7 +1,12 @@
 import { ValidationError } from "@/domain/expectedError/ExpectedError";
 import type { Order} from "@/domain/orders/Order";
+import type { Holding } from "@/shared/types";
 
-export async function placeOrder(input: Order) {
+type PlaceOrderResponse = {
+  holdings: Holding[];
+};
+
+export async function placeOrder(input: Order): Promise<Holding[]> {
   const res = await fetch("/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -13,10 +18,18 @@ export async function placeOrder(input: Order) {
     }),
   });
 
-  const data = await res.json();
+  const data = (await res.json().catch(() => ({}))) as Partial<PlaceOrderResponse> & {
+    error?: { message?: string } | string;
+  };
+
   if (!res.ok) {
-    const message = data?.error?.message ?? data?.error ?? "Order failed";
+    const errorMessage =
+      typeof data.error === "string"
+        ? data.error
+        : data.error?.message;
+    const message = errorMessage ?? "Order failed";
     throw new ValidationError(message);
   }
 
+  return data.holdings ?? [];
 }

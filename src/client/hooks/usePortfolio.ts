@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { getMarketSimulation } from "@/client/services/marketSimulation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchHoldings } from "@/client/services/portfolioApi";
+import { useLiveMarket } from "@/client/hooks/useLiveMarket";
 
 export interface PortfolioRow {
   symbol: string;
@@ -12,59 +12,83 @@ export interface PortfolioRow {
   profitLoss: number;
 }
 
-export function usePortfolio(intervalMs = 1000) {
-  const [rows, setRows] = useState<PortfolioRow[]>([]);
+interface Holding {
+  symbol: string;
+  quantity: number;
+  avgPrice: number;
+}
+
+export function usePortfolio() {
+  const [holdings, setHoldings] = useState<Holding[]>([]);
   const [error, setError] = useState<Error | null>(null);
-  const requestIdRef = useRef(0);
 
-  const marketSimulation = getMarketSimulation();
+  const { stocks, error: marketError } = useLiveMarket();
 
-  const updatePortfolio = useCallback(async () => {
-    const requestId = ++requestIdRef.current;
+  const refreshHoldings = useCallback(async () => {
     try {
-      const holdings = await fetchHoldings();
-      if (requestId !== requestIdRef.current) return;
-
-      const updatedRows: PortfolioRow[] = holdings.map((h) => {
-        const stock = marketSimulation.getStock(h.symbol);
-        const currentPrice = stock ? stock.price : 0;
-
-        return {
-          symbol: h.symbol,
-          quantity: h.quantity,
-          avgPrice: h.avgPrice,
-          currentPrice,
-          profitLoss: (currentPrice - h.avgPrice) * h.quantity,
-        };
-      });
-
-      setRows(updatedRows);
+      const data = await fetchHoldings();
+      setHoldings(data);
       setError(null);
     } catch (err) {
-      if (requestId !== requestIdRef.current) return;
-      if (err instanceof Error) {
-        setError(err);
-        return;
-      }
-
-      setError(new Error("Unknown error"));
+      setError(err instanceof Error ? err : new Error("Unknown error"));
+      setHoldings([]);
     }
-  }, [marketSimulation]);
+  }, []);
 
   useEffect(() => {
-    updatePortfolio();
+    let isCancelled = false;
 
-    const id = setInterval(() => {
+    async function loadInitialHoldings() {
       try {
-        marketSimulation.simulatePrices();
-        updatePortfolio();
+        const data = await fetchHoldings();
+
+        if (isCancelled) {
+          return;
+        }
+
+        setHoldings(data);
+        setError(null);
       } catch (err) {
-        console.error("Unexpected error in portfolio update interval:", err);
+        if (isCancelled) {
+          return;
+        }
+
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+        setHoldings([]);
       }
-    }, intervalMs);
+    }
 
-    return () => clearInterval(id);
-  }, [intervalMs, marketSimulation, updatePortfolio]);
+    void loadInitialHoldings();
 
-  return { rows, error };
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  const rows: PortfolioRow[] = useMemo(() => {
+    const stockBySymbol = new Map(
+      stocks.map((stock) => [stock.symbol, stock])
+    );
+
+    return holdings.map((holding) => {
+      const stock = stockBySymbol.get(holding.symbol);
+
+      const currentPrice = stock?.price ?? holding.avgPrice;
+
+      return {
+        symbol: holding.symbol,
+        quantity: holding.quantity,
+        avgPrice: holding.avgPrice,
+        currentPrice,
+        profitLoss:
+          (currentPrice - holding.avgPrice) * holding.quantity,
+      };
+    });
+  }, [holdings, stocks]);
+
+  return {
+    rows,
+    error: error ?? marketError,
+    refreshHoldings,
+  };
 }

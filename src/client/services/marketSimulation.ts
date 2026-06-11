@@ -1,15 +1,13 @@
 import { Stock } from "@/domain/market/Stock";
+import { DEFAULT_MARKET_STOCKS } from "@/shared/constants/marketStocks";
 
 export class MarketSimulation {
   private stocks: Stock[] = [];
 
   constructor() {
-    this.stocks = [
-      new Stock("AAPL", "Apple Inc.", 150),
-      new Stock("TSLA", "Tesla Motors", 220),
-      new Stock("AMZN", "Amazon Inc.", 125),
-      new Stock("MSFT", "Microsoft", 310),
-    ];
+    this.stocks = DEFAULT_MARKET_STOCKS.map(
+      (stock) => new Stock(stock.symbol, stock.name, stock.price),
+    );
   }
 
   getStocks(): Stock[] {

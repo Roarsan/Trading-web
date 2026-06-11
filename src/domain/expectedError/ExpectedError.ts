@@ -3,7 +3,7 @@ export class ExpectedError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ExpectedError";
-    // trace the location at which error was called except expcted errors
+    // trace the location at which error was called except expected errors
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ExpectedError);
     }

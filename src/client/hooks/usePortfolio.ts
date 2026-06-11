@@ -36,8 +36,34 @@ export function usePortfolio() {
   }, []);
 
   useEffect(() => {
-    refreshHoldings();
-  }, [refreshHoldings]);
+    let isCancelled = false;
+
+    async function loadInitialHoldings() {
+      try {
+        const data = await fetchHoldings();
+
+        if (isCancelled) {
+          return;
+        }
+
+        setHoldings(data);
+        setError(null);
+      } catch (err) {
+        if (isCancelled) {
+          return;
+        }
+
+        setError(err instanceof Error ? err : new Error("Unknown error"));
+        setHoldings([]);
+      }
+    }
+
+    void loadInitialHoldings();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const rows: PortfolioRow[] = useMemo(() => {
     const stockBySymbol = new Map(

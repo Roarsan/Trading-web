@@ -217,9 +217,9 @@ Trading-web/
 │   │   ├── portfolio/            # Portfolio queries
 │   │   └── validation/           # Zod schemas
 │   └── shared/                   # Shared constants and TypeScript types
-├── deployment/
-│   └── deploy.md                 # AWS deployment instructions
 ├── .env.example                  # Example environment configuration
+├── DEPLOYMENT.md                 # AWS deployment instructions
+├── TROUBLESHOOTING.md            # Common problems and solutions
 └── package.json                  # Dependencies and scripts
 ```
 
@@ -257,4 +257,6 @@ Order requests are validated with Zod before the domain service updates holdings
 
 The production application uses AWS EC2, PostgreSQL on RDS, Nginx, HTTPS, and PM2.
 
-See the [deployment guide](deployment/deploy.md) for complete setup instructions.
+See the [deployment guide](DEPLOYMENT.md) for complete setup instructions.
+
+For common production and development issues, see the [troubleshooting guide](TROUBLESHOOTING.md).

@@ -1,444 +1,564 @@
-# Trading Web - Deployment Guide
+# 🚀 TradingApp Deployment Guide
 
-## Architecture
+This guide deploys TradingApp to an Ubuntu AWS EC2 instance with PostgreSQL on AWS RDS, Nginx as a reverse proxy, PM2 for process management, and Let's Encrypt for HTTPS.
 
-```
-Internet
-     │
-     ▼
-HTTPS (Let's Encrypt)
-     │
-     ▼
-Nginx (Reverse Proxy)
-     │
-     ▼
-Next.js App (PM2)
-     │
-     ▼
+The production application is available at [https://tradingweb.dev](https://tradingweb.dev).
+
+## 🧱 Deployment Architecture
+
+```text
+Browser
+   │
+   ▼
+HTTPS and DNS
+   │
+   ▼
+Nginx reverse proxy
+   │
+   ▼
+Next.js application on port 3000
+   │
+   ├── PM2 process manager
+   ├── Google OAuth
+   ├── Finnhub WebSocket API
+   │
+   ▼
 Prisma
-     │
-     ▼
+   │
+   ▼
 AWS RDS PostgreSQL
 ```
 
----
+## ✅ Prerequisites
 
-# AWS Resources
+- An AWS account
+- An Ubuntu 24.04 EC2 instance
+- A PostgreSQL RDS database
+- A domain name pointing to the EC2 public IP
+- Google OAuth credentials
+- A Finnhub API token
+- SSH access to the EC2 instance
 
-## EC2
+## ☁️ AWS Configuration
 
-* OS: Ubuntu 24.04 LTS
-* Public IP: 13.43.121.177
-* Domain: https://tradingweb.dev
-* SSH User: ubuntu
+### EC2 Security Group
 
-SSH:
+Allow the following inbound traffic:
+
+| Type | Port | Source |
+| --- | --- | --- |
+| SSH | `22` | Your IP address |
+| HTTP | `80` | Anywhere |
+| HTTPS | `443` | Anywhere |
+
+Port `3000` does not need to be publicly accessible because Nginx forwards requests to it internally.
+
+### RDS Security Group
+
+Allow PostgreSQL traffic on port `5432` from the EC2 security group.
+
+Avoid allowing public database access from `0.0.0.0/0`.
+
+### DNS Records
+
+Create DNS records that point to the EC2 public IP:
+
+| Type | Name | Value |
+| --- | --- | --- |
+| `A` | `@` | EC2 public IP |
+| `A` or `CNAME` | `www` | EC2 public IP or root domain |
+
+Confirm the DNS records:
 
 ```bash
-ssh -i ~/Downloads/tradingwebkey-2.pem ubuntu@13.43.121.177
+dig +short tradingweb.dev
+dig +short www.tradingweb.dev
 ```
 
----
+## 🔑 Connect to EC2
 
-## RDS
+Protect the private key:
 
-Engine:
-PostgreSQL
-
-Database:
-postgres
-
-Connection:
-
-```
-trading-app-db.ct6imim86thi.eu-west-2.rds.amazonaws.com
+```bash
+chmod 400 /path/to/your-key.pem
 ```
 
----
+Connect to the server:
 
-# First Time Server Setup
+```bash
+ssh -i /path/to/your-key.pem ubuntu@EC2_PUBLIC_IP
+```
 
-Update packages
+## 🛠️ First-Time Server Setup
+
+### 1. Update the Server
 
 ```bash
 sudo apt update
 sudo apt upgrade -y
 ```
 
-Install Git
+### 2. Install Git
 
 ```bash
 sudo apt install -y git
 ```
 
-Install Node.js
+### 3. Install Node.js 22
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
 
-Install PM2
+Verify the installation:
+
+```bash
+node --version
+npm --version
+```
+
+### 4. Install PM2
 
 ```bash
 sudo npm install -g pm2
 ```
 
-Install Nginx
+### 5. Install and Start Nginx
 
 ```bash
 sudo apt install -y nginx
-```
-
-Enable nginx
-
-```bash
 sudo systemctl enable nginx
 sudo systemctl start nginx
 ```
 
----
-
-# Clone Project
+Confirm that Nginx is running:
 
 ```bash
+sudo systemctl status nginx
+```
+
+## 📦 Install the Application
+
+### 1. Clone the Repository
+
+```bash
+cd ~
 git clone https://github.com/Roarsan/Trading-web.git
 cd Trading-web
 ```
 
----
-
-# Environment Variables
-
-Create
-
-```
-.env
-```
-
-Example:
-
-```env
-DATABASE_URL=
-GOOGLE_ID=
-GOOGLE_SECRET=
-NEXT_PUBLIC_FINNHUB_TOKEN=
-NEXTAUTH_URL=
-NEXTAUTH_SECRET=
-```
-
-Never commit real values.
-
----
-
-# Install Dependencies
+### 2. Install Dependencies
 
 ```bash
-npm install
+npm ci
 ```
 
-Generate Prisma
+Use `npm install` instead if the lock file is intentionally being updated.
+
+## 🔐 Production Environment Variables
+
+Create the production environment file:
+
+```bash
+nano .env
+```
+
+Add the following values:
+
+```env
+DATABASE_URL=postgresql://DB_USER:DB_PASSWORD@RDS_HOST:5432/postgres?sslmode=require
+GOOGLE_ID=your-production-google-client-id
+GOOGLE_SECRET=your-production-google-client-secret
+NEXTAUTH_SECRET=your-production-nextauth-secret
+NEXTAUTH_URL=https://tradingweb.dev
+NEXT_PUBLIC_FINNHUB_TOKEN=your-finnhub-token
+```
+
+Generate a secure NextAuth secret:
+
+```bash
+openssl rand -base64 32
+```
+
+### Environment Notes
+
+- URL-encode special characters in the database username or password.
+- Keep `.env` on the server and never commit it to Git.
+- `NEXTAUTH_URL` must match the public HTTPS domain.
+- `NEXT_PUBLIC_FINNHUB_TOKEN` is included in browser code and should be treated as public.
+- Set all `NEXT_PUBLIC_*` variables before running `npm run build`.
+
+Restrict access to the environment file:
+
+```bash
+chmod 600 .env
+```
+
+## 🗄️ Prepare the Production Database
+
+Generate the Prisma client:
 
 ```bash
 npx prisma generate
 ```
 
-Push schema if required
+Apply committed database migrations:
 
 ```bash
-npx prisma db push
+npx prisma migrate deploy
 ```
 
----
+Use `prisma migrate deploy` in production. Do not use `prisma migrate dev` or `prisma db push` for normal production deployments.
 
-# Build
+## 🏗️ Build the Application
 
 ```bash
 npm run build
 ```
 
----
+If the build succeeds, Next.js creates the production output in `.next`.
 
-# Start Production
+## ⚙️ Run the Application with PM2
+
+Start TradingApp:
 
 ```bash
 pm2 start npm --name trading-web -- start
 ```
 
-Save
+Check its status:
+
+```bash
+pm2 status
+pm2 logs trading-web
+```
+
+Save the process list:
 
 ```bash
 pm2 save
 ```
 
-Startup
+Enable PM2 after server restarts:
 
 ```bash
 pm2 startup
 ```
 
-Run the command PM2 prints.
-
-Then
+Run the command printed by PM2, then save the process list again:
 
 ```bash
 pm2 save
 ```
 
-Useful commands
+### Useful PM2 Commands
+
+| Command | Description |
+| --- | --- |
+| `pm2 status` | Show application status |
+| `pm2 logs trading-web` | View application logs |
+| `pm2 restart trading-web --update-env` | Restart with current environment values |
+| `pm2 stop trading-web` | Stop the application |
+| `pm2 delete trading-web` | Remove the PM2 process |
+
+## 🌐 Configure Nginx
+
+Create a dedicated site configuration:
 
 ```bash
-pm2 status
-
-pm2 restart trading-web
-
-pm2 logs trading-web
-
-pm2 delete trading-web
+sudo nano /etc/nginx/sites-available/trading-web
 ```
 
----
+Add:
 
-# Nginx
-
-Configuration
-
-```
-/etc/nginx/sites-available/default
-```
-
-```
+```nginx
 server {
     listen 80;
+    listen [::]:80;
 
     server_name tradingweb.dev www.tradingweb.dev;
 
     location / {
-
-        proxy_pass http://localhost:3000;
-
+        proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
 
         proxy_set_header Upgrade $http_upgrade;
-
         proxy_set_header Connection "upgrade";
-
         proxy_set_header Host $host;
-
         proxy_set_header X-Real-IP $remote_addr;
-
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-
         proxy_set_header X-Forwarded-Proto $scheme;
-
     }
 }
 ```
 
-Test
+Enable the configuration:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/trading-web /etc/nginx/sites-enabled/trading-web
+sudo rm /etc/nginx/sites-enabled/default
+```
+
+Test and reload Nginx:
 
 ```bash
 sudo nginx -t
-```
-
-Reload
-
-```bash
 sudo systemctl reload nginx
 ```
 
----
+Verify the application before enabling HTTPS:
 
-# HTTPS
+```bash
+curl -I http://127.0.0.1:3000
+curl -I http://tradingweb.dev
+```
 
-Install Certbot
+## 🔒 Enable HTTPS
+
+Install Certbot:
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
 ```
 
-Generate SSL
+Request the certificate:
 
 ```bash
 sudo certbot --nginx -d tradingweb.dev -d www.tradingweb.dev
 ```
 
-Renew
+Test automatic renewal:
 
 ```bash
 sudo certbot renew --dry-run
 ```
 
----
-
-# Deployment
-
-Whenever new code is pushed
+Confirm the final site:
 
 ```bash
-cd ~/Trading-web
-
-git pull
-
-npm install
-
-npx prisma generate
-
-npm run build
-
-pm2 restart trading-web --update-env
+curl -I https://tradingweb.dev
 ```
 
----
+## 🔐 Configure Google OAuth
 
-# Google OAuth
+In the production Google OAuth client, add:
 
-Authorized JavaScript Origin
+### Authorized JavaScript Origin
 
-```
+```text
 https://tradingweb.dev
 ```
 
-Authorized Redirect URI
+### Authorized Redirect URI
 
-```
+```text
 https://tradingweb.dev/api/auth/callback/google
 ```
 
----
+The redirect URI must match exactly, including the protocol and path.
 
-# Troubleshooting
+## 🔄 Deploy Future Updates
 
-## Cannot SSH
+After new code is pushed to the deployment branch:
 
-Check
+```bash
+cd ~/Trading-web
+git pull
+npm ci
+npx prisma generate
+npx prisma migrate deploy
+npm run build
+pm2 restart trading-web --update-env
+```
 
-* Correct .pem
-* chmod 400
-* Security Group allows port 22
-
----
-
-## npm build gets "Killed"
-
-Server ran out of RAM.
-
-Solution:
-
-Create swap memory.
-
----
-
-## Site cannot be reached
-
-Check
+Check the deployment:
 
 ```bash
 pm2 status
-
-sudo systemctl status nginx
-
-sudo nginx -t
-
-curl localhost:3000
+pm2 logs trading-web --lines 100
+curl -I https://tradingweb.dev
 ```
 
----
+If `.env` changes, update it before building and restart PM2 with `--update-env`.
 
-## Domain loads old version
+## ✅ Production Checklist
 
-DNS still pointing to old EC2.
+- [ ] EC2 allows inbound traffic on ports `22`, `80`, and `443`
+- [ ] RDS allows port `5432` from the EC2 security group
+- [ ] DNS points to the current EC2 public IP
+- [ ] Production environment variables are configured
+- [ ] Prisma migrations completed successfully
+- [ ] The Next.js production build completed successfully
+- [ ] PM2 reports `trading-web` as online
+- [ ] Nginx configuration passes `nginx -t`
+- [ ] HTTPS certificate is active
+- [ ] Google sign-in completes successfully
+- [ ] Finnhub prices load on the Market page
+- [ ] Orders and portfolio data work for an authenticated user
 
-Check
+## 🩺 Troubleshooting
+
+### Application Is Not Running
+
+Check PM2 and the local application:
+
+```bash
+pm2 status
+pm2 logs trading-web --lines 100
+curl -I http://127.0.0.1:3000
+```
+
+Common causes include missing environment variables, a failed build, or a database connection error.
+
+### Nginx Returns `502 Bad Gateway`
+
+Nginx cannot reach the Next.js process.
+
+```bash
+pm2 status
+sudo nginx -t
+sudo systemctl status nginx
+curl -I http://127.0.0.1:3000
+```
+
+Restart the application if necessary:
+
+```bash
+pm2 restart trading-web --update-env
+```
+
+### Google Sign-In Fails
+
+Confirm:
+
+- `NEXTAUTH_URL` is `https://tradingweb.dev`
+- The Google redirect URI matches exactly
+- `GOOGLE_ID`, `GOOGLE_SECRET`, and `NEXTAUTH_SECRET` are set
+- EC2 can connect to the RDS database
+
+Review the application logs:
+
+```bash
+pm2 logs trading-web --lines 100
+```
+
+### Prisma Cannot Connect to RDS
+
+Check:
+
+- The RDS endpoint, username, password, port, and database name
+- The RDS security group allows PostgreSQL traffic from EC2
+- The database URL includes the required SSL configuration
+- Special characters in credentials are URL-encoded
+
+Test whether the database port is reachable:
+
+```bash
+nc -zv RDS_HOST 5432
+```
+
+### Prisma Error `P1010`
+
+`P1010` usually means the database user does not have permission to access the selected database.
+
+Verify the database name and grant the required permissions to the configured user.
+
+### Build Process Is Killed
+
+The EC2 instance may have insufficient memory. Check available memory:
+
+```bash
+free -h
+```
+
+Create a 2 GB swap file if needed:
+
+```bash
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
+
+Persist it across restarts:
+
+```bash
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+Confirm that swap is active:
+
+```bash
+swapon --show
+```
+
+### Domain Shows an Old Deployment
+
+Check the DNS result and deployed commit:
 
 ```bash
 dig +short tradingweb.dev
+git log -1 --oneline
+pm2 status
 ```
 
----
+Confirm that DNS points to the current EC2 public IP, then rebuild and restart the application.
 
-## WebSocket not working
+### Finnhub WebSocket Does Not Update
 
-Initially browser loaded the old deployment because DNS still pointed to the previous EC2.
+Check:
 
-Fix:
+- `NEXT_PUBLIC_FINNHUB_TOKEN` was present before the production build
+- The browser console does not show Finnhub authentication or connection errors
+- The deployed site is the latest build
 
-* Update DNS A record
-* Wait for propagation
-* Rebuild
-* Restart PM2
-
----
-
-## Google Login Callback Error
-
-Root cause:
-
-Prisma could not access RDS.
-
-Check
+After changing the token:
 
 ```bash
-pm2 logs trading-web
+npm run build
+pm2 restart trading-web --update-env
 ```
 
----
+### Cannot Connect with SSH
 
-## Prisma P1010
+Confirm:
 
+- The private key has `400` permissions
+- The correct EC2 public IP and SSH user are being used
+- Port `22` is allowed from your IP in the EC2 security group
+- The instance is running
+
+## 🔒 Security and Maintenance
+
+- Never commit `.env`, `.pem`, passwords, API secrets, or database credentials.
+- Restrict SSH access to trusted IP addresses.
+- Keep the RDS database private and limit access to the EC2 security group.
+- Use separate Google OAuth credentials for development and production.
+- Keep Ubuntu and npm dependencies updated.
+- Review PM2 and Nginx logs regularly.
+- Enable AWS backups and RDS automated snapshots.
+- Monitor AWS billing and Finnhub API usage.
+- Rotate credentials immediately if they are exposed.
+
+## 📁 Files to Keep Private
+
+Never commit:
+
+```text
+.env
+*.pem
+database credentials
+OAuth secrets
+API secrets
 ```
-User denied access on database
+
+Safe to commit:
+
+```text
+.env.example
+source code
+Prisma migrations
+deployment documentation
+Nginx examples without secrets
 ```
-
-Caused by database connection configuration.
-
----
-
-## pg_hba.conf no encryption
-
-Production RDS required SSL.
-
-Database connection updated to use SSL.
-
----
-
-## SSL self-signed certificate
-
-Verified AWS RDS CA bundle works.
-
-Current deployment should use the verified production SSL configuration.
-
----
-
-## Git Push Failed
-
-GitHub passwords are no longer supported.
-
-Use:
-
-* SSH key
-
-or
-
-* Personal Access Token
-
----
-
-# Backup
-
-Never commit
-
-* .env
-* .pem
-* passwords
-* secrets
-
-Commit
-
-* source code
-* deployment documentation
-* nginx example config
-* .env.example
-
-Keep secrets in a password manager.
-

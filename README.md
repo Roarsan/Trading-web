@@ -1,93 +1,240 @@
-# TradingApp
+# 📈 TradingApp
 
-A full-stack paper-trading application for viewing live stock prices, placing simulated buy and sell orders, and tracking portfolio performance.
+A modern full-stack paper-trading platform built with Next.js, TypeScript, PostgreSQL, and Prisma. TradingApp allows users to view live stock prices, place simulated buy and sell orders, and monitor portfolio performance.
 
-[View the live application](https://tradingweb.dev)
+> TradingApp is an educational project. No real financial transactions are executed.
 
-> TradingApp is an educational project. It does not execute real financial transactions.
+## ✨ Live Demo
 
-## Features
+Visit [https://tradingweb.dev](https://tradingweb.dev) to view the deployed application.
 
-- Google OAuth authentication
-- Live market prices through Finnhub WebSocket
-- Simulated buy and sell orders
-- Portfolio holdings with average price and profit/loss
-- Server-side validation and authenticated API routes
-- Responsive light and dark interface
+For local development, open [http://localhost:3000](http://localhost:3000) after starting the application.
 
-## Tech Stack
+## 🚀 Tech Stack
 
-- Next.js 16, React 19, and TypeScript
-- Tailwind CSS 4
-- NextAuth.js
-- Prisma and PostgreSQL
-- Finnhub WebSocket API
-- Zod
+### Frontend
 
-## Getting Started
+- Next.js 16 — React framework using the App Router
+- React 19 — User interface
+- TypeScript — Static type checking
+- Tailwind CSS 4 — Responsive application styling
 
-### Prerequisites
+### Backend
+
+- Next.js API Routes — Server-side endpoints
+- NextAuth.js — Authentication and session management
+- Zod — Request validation
+- Prisma 7 — Database ORM
+
+### Database and Services
+
+- PostgreSQL — Users, sessions, and portfolio holdings
+- Google OAuth — User authentication
+- Finnhub WebSocket API — Live stock prices
+
+## 🧩 Features
+
+### Core Functionality
+
+- ✅ Live Market Data — View current prices for supported stocks
+- ✅ Paper Trading — Place simulated buy and sell orders
+- ✅ Portfolio Tracking — View holdings, average prices, and profit/loss
+- ✅ Google Authentication — Sign in securely with a Google account
+- ✅ Persistent Holdings — Store each user's portfolio in PostgreSQL
+- ✅ Order Validation — Validate symbols, quantities, prices, and order types
+- ✅ Protected APIs — Require authentication for orders and portfolios
+- ✅ Error Handling — Display consistent client and server errors
+
+### UI/UX
+
+- 🎨 Clean Interface — Simple professional trading dashboard
+- 📱 Responsive Design — Supports desktop and smaller screens
+- 🌙 Dark Mode Styling — Includes light and dark interface styles
+- ⚡ Live Updates — Market prices update through a WebSocket connection
+- 🧭 Simple Navigation — Home, Market, Orders, and Portfolio pages
+
+## ✅ Prerequisites
 
 - Node.js 22 or later
+- npm
 - PostgreSQL
 - Google OAuth credentials
-- A Finnhub API token
+- Finnhub API token
 
-### Installation
+## 🛠️ Development and Setup
 
-1. Clone the repository and install dependencies:
+### 1. Clone and Install
 
-   ```bash
-   git clone <repository-url>
-   cd Trading-web
-   npm install
-   ```
+```bash
+git clone <repository-url>
+cd Trading-web
+npm install
+```
 
-2. Create a local environment file:
+### 2. Create the Environment File
 
-   ```bash
-   cp .env.example .env
-   ```
+Copy the example environment file:
 
-3. Add your environment variables:
+```bash
+cp .env.example .env
+```
 
-   ```env
-   DATABASE_URL=postgresql://postgres:password@localhost:5432/trading
-   GOOGLE_ID=your-google-client-id
-   GOOGLE_SECRET=your-google-client-secret
-   NEXTAUTH_SECRET=your-nextauth-secret
-   NEXTAUTH_URL=http://localhost:3000
-   NEXT_PUBLIC_FINNHUB_TOKEN=your-finnhub-token
-   ```
+Add the required values:
 
-   Generate a NextAuth secret with:
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/trading
+GOOGLE_ID=your-google-client-id
+GOOGLE_SECRET=your-google-client-secret
+NEXTAUTH_SECRET=your-nextauth-secret
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_FINNHUB_TOKEN=your-finnhub-token
+```
 
-   ```bash
-   openssl rand -base64 32
-   ```
+Generate a NextAuth secret:
 
-   Use the following Google OAuth callback URL:
+```bash
+openssl rand -base64 32
+```
 
-   ```text
-   http://localhost:3000/api/auth/callback/google
-   ```
+Add this redirect URI to your Google OAuth application:
 
-4. Set up the database:
+```text
+http://localhost:3000/api/auth/callback/google
+```
 
-   ```bash
-   npx prisma migrate dev
-   npx prisma generate
-   ```
+### 3. Set Up the Database
 
-5. Start the development server:
+Create a PostgreSQL database, then run:
 
-   ```bash
-   npm run dev
-   ```
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
+
+### 4. Start the Application
+
+```bash
+npm run dev
+```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Available Scripts
+## 🗄️ Database Schema
+
+### User
+
+Stores user profile information provided by Google OAuth.
+
+```text
+id             String
+name           String?
+email          String? (unique)
+emailVerified  DateTime?
+image          String?
+```
+
+### Account
+
+Stores the user's linked OAuth account.
+
+```text
+userId             String
+provider           String
+providerAccountId  String
+access_token       String?
+refresh_token      String?
+```
+
+### Session
+
+Stores authenticated database sessions.
+
+```text
+sessionToken  String (unique)
+userId        String
+expires       DateTime
+```
+
+### Holding
+
+Stores a user's current stock position.
+
+```text
+userId    String
+symbol    String
+quantity  Integer
+avgPrice  Float
+```
+
+Each user can have one holding per stock symbol.
+
+## 🌐 Application Routes
+
+### Pages
+
+| Route | Description |
+| --- | --- |
+| `/` | Application home page |
+| `/market` | View live stock prices |
+| `/orders` | Place simulated buy and sell orders |
+| `/portfolio` | View holdings and profit/loss |
+
+### API Routes
+
+| Method | Route | Description |
+| --- | --- | --- |
+| `POST` | `/api/orders` | Validate and process a simulated order |
+| `GET` | `/api/portfolio` | Return the signed-in user's holdings |
+| `GET`, `POST` | `/api/auth/[...nextauth]` | Handle authentication requests |
+
+The order and portfolio APIs require an authenticated session.
+
+## 🧱 Project Structure
+
+```text
+Trading-web/
+├── prisma/
+│   ├── migrations/               # Database migrations
+│   └── schema.prisma             # Prisma database schema
+├── src/
+│   ├── app/
+│   │   ├── api/                  # Authentication, order, and portfolio APIs
+│   │   ├── market/               # Live market page
+│   │   ├── orders/               # Order page
+│   │   └── portfolio/            # Portfolio page
+│   ├── client/
+│   │   ├── components/           # Reusable interface components
+│   │   ├── hooks/                # Authentication and market hooks
+│   │   └── services/             # API and WebSocket clients
+│   ├── domain/
+│   │   ├── market/               # Market entities
+│   │   ├── orders/               # Order entities and business rules
+│   │   └── portfolio/            # Portfolio entities
+│   ├── server/
+│   │   ├── auth/                 # NextAuth configuration
+│   │   ├── db/                   # Prisma database client
+│   │   ├── orders/               # Order processing
+│   │   ├── portfolio/            # Portfolio queries
+│   │   └── validation/           # Zod schemas
+│   └── shared/                   # Shared constants and TypeScript types
+├── deployment/
+│   └── deploy.md                 # AWS deployment instructions
+├── .env.example                  # Example environment configuration
+└── package.json                  # Dependencies and scripts
+```
+
+## 🔧 Architecture and Patterns
+
+TradingApp separates client, domain, and server responsibilities:
+
+- Client layer — Pages, React hooks, API clients, and WebSocket connections
+- Domain layer — Trading entities and order-processing rules
+- Server layer — Authentication, validation, database access, and API services
+- Shared layer — Types and constants used throughout the application
+
+Order requests are validated with Zod before the domain service updates holdings through Prisma.
+
+## 📜 Available Scripts
 
 | Command | Description |
 | --- | --- |
@@ -96,27 +243,18 @@ Open [http://localhost:3000](http://localhost:3000).
 | `npm run start` | Start the production server |
 | `npm run lint` | Run ESLint |
 
-## Project Structure
+## 🔒 Security Considerations
 
-```text
-src/
-├── app/          # Pages and API routes
-├── client/       # UI components, hooks, and client services
-├── domain/       # Trading entities and business logic
-├── server/       # Authentication, validation, and database services
-└── shared/       # Shared types and constants
-prisma/           # Database schema and migrations
-deployment/       # Production deployment guide
-```
+- Never commit `.env` files, OAuth secrets, database credentials, or private keys.
+- Use separate databases and environment variables for development and production.
+- Restrict Google OAuth redirect URLs to trusted domains.
+- Treat `NEXT_PUBLIC_FINNHUB_TOKEN` as publicly visible browser configuration.
+- Order and portfolio endpoints require an authenticated session.
+- Server requests are validated before database operations are performed.
+- This application is for paper trading only and should not be used as a brokerage platform.
 
-## Main Routes
+## 🚀 Deployment
 
-| Route | Description |
-| --- | --- |
-| `/market` | View live stock prices |
-| `/orders` | Place simulated orders |
-| `/portfolio` | View holdings and profit/loss |
+The production application uses AWS EC2, PostgreSQL on RDS, Nginx, HTTPS, and PM2.
 
-## Deployment
-
-For the AWS EC2, RDS, Nginx, HTTPS, and PM2 setup, see the [deployment guide](deployment/deploy.md).
+See the [deployment guide](deployment/deploy.md) for complete setup instructions.

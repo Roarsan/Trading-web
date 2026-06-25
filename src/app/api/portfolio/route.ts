@@ -9,7 +9,7 @@ export const GET = withApiError(async () => {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    throw unauthorized("Unauthorized");
+    throw unauthorized("Sign in to view the portfolio.");
   }
 
   const holdings = await getHoldingsByUserId(session.user.id);

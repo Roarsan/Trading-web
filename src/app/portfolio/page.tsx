@@ -13,8 +13,8 @@ export default function PortfolioPage() {
                 {error && <div className="section"><ErrorDisplay error={error} title="Portfolio Error" /></div>}
 
                 {/* Holdings Table */}
-                <section className="card card-table">
-                    {rows.length === 0 && !error ? (
+                {!error && <section className="card card-table">
+                    {rows.length === 0 ? (
                         <div className="empty-state">
                             <div className="icon-circle">
                                 <svg className="w-8 h-8 icon-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,7 +67,7 @@ export default function PortfolioPage() {
                             </table>
                         </div>
                     )}
-                </section>
+                </section>}
             </div>
         </main>
     );

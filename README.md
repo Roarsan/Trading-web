@@ -1,179 +1,332 @@
-# 📈 TradingApp
+# TradingApp
 
-A modern trading simulator that lets users track a live‑simulated market, place buy/sell orders, and monitor portfolio performance. Built with Next.js, Prisma, and NextAuth in a clean domain‑driven structure.
+A full-stack paper-trading application for viewing live stock prices, placing simulated buy and sell orders, and tracking portfolio performance.
 
-## ✨ Live Demo
+**Production:** [https://tradingweb.dev](https://tradingweb.dev)
 
-Run locally at:
+> TradingApp is an educational project. Orders are simulated and no real financial transactions are executed.
+
+## Features
+
+- Google OAuth authentication
+- Live AAPL, AMZN, MSFT, and TSLA prices from Finnhub
+- Simulated buy and sell orders
+- Server-side order validation
+- Per-user holdings stored in PostgreSQL
+- Portfolio average cost and live profit/loss calculations
+- Responsive light and dark interface
+- Consistent API error responses
+
+## Technology
+
+- Next.js 16 with the App Router
+- React 19 and TypeScript
+- Tailwind CSS 4
+- NextAuth.js with Google OAuth
+- Prisma 7 and PostgreSQL
+- Finnhub WebSocket market data
+- Zod validation
+
+## Current Market Data Behavior
+
+The application currently uses Finnhub for market prices in both local development and production:
 
 ```text
-http://localhost:3000
+useLiveMarket
+    └── connectLiveMarket
+            └── Finnhub WebSocket
 ```
 
-## 🚀 Tech Stack
+`src/client/services/marketSimulation.ts` contains a local simulation utility, but it is not currently connected to `useLiveMarket`. Setting `NEXT_PUBLIC_MARKET_MODE` has no effect unless mode-selection logic is implemented in the application.
 
-### Backend
-- **Next.js App Router** — API routes and server rendering
-- **NextAuth** — Google OAuth + database sessions
-- **Prisma** — Database ORM
-- **PostgreSQL** — Relational database
-- **Zod** — Request validation
+This means:
 
-### Frontend
-- **React 19** — UI rendering
-- **Tailwind CSS** — Styling
-- **Custom Hooks** — Live market + portfolio data
+- Local development requires `NEXT_PUBLIC_FINNHUB_TOKEN`.
+- Production requires `NEXT_PUBLIC_FINNHUB_TOKEN`.
+- Orders and holdings are always stored in the database selected by `DATABASE_URL`.
 
-## 🧩 Features
+## Local and Production Environments
 
-### Core Functionality
-- ✅ **Google Sign‑In** — Authenticated user sessions
-- ✅ **Live Market Simulation** — In‑memory price updates
-- ✅ **Place Orders** — Buy/Sell stocks with validation
-- ✅ **Portfolio Dashboard** — Avg cost, current price, P/L
-- ✅ **Watchlist UI** — UI scaffold for adding stocks
-- ✅ **Centralized API Errors** — Consistent error response shape
+The local application and deployed application use separate `.env` files.
 
-### UI/UX
-- 🎨 **Modern UI** — Clean, minimal styling
-- 📱 **Responsive Layout** — Works across devices
+| Environment | Market data | Database | URL |
+| --- | --- | --- | --- |
+| Local development | Finnhub | Database in local `.env` | `http://localhost:3000` |
+| AWS production | Finnhub | AWS RDS URL on EC2 | `https://tradingweb.dev` |
 
-## ✅ Prerequisites
+### Important database rule
 
-- **Node.js (LTS recommended)**
-- **PostgreSQL** database
-- **Google OAuth credentials** (client ID + secret)
+`DATABASE_URL` decides where users, sessions, and holdings are stored.
 
-## 🚀 Development & Setup
+If your local `.env` contains the AWS RDS URL, orders placed on localhost will write to the production database. To keep local testing separate and avoid unnecessary AWS usage, use a local PostgreSQL database in your local `.env`.
 
-### 1. Install
+Recommended local database:
+
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/trading
+```
+
+Production database on EC2:
+
+```env
+DATABASE_URL=postgresql://USER:PASSWORD@RDS_HOST:5432/postgres?sslmode=require
+```
+
+Never commit either real connection string.
+
+## Local Setup
+
+### Requirements
+
+- Node.js 22 or later
+- PostgreSQL
+- Google OAuth credentials
+- Finnhub API token
+
+### 1. Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Environment Setup
+### 2. Create the environment file
 
-Create a `.env` file in the project root:
+Copy the example:
 
 ```bash
-DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DBNAME
-GOOGLE_ID=your-google-client-id
-GOOGLE_SECRET=your-google-client-secret
-NEXTAUTH_SECRET=your-random-secret
+cp .env.example .env
 ```
 
-### 3. Database Setup
+Use local development values:
+
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/trading
+GOOGLE_ID=your-google-client-id
+GOOGLE_SECRET=your-google-client-secret
+NEXTAUTH_SECRET=your-local-secret
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_FINNHUB_TOKEN=your-finnhub-token
+```
+
+Generate a NextAuth secret:
+
+```bash
+openssl rand -base64 32
+```
+
+Add the following callback to the local Google OAuth application:
+
+```text
+http://localhost:3000/api/auth/callback/google
+```
+
+### 3. Prepare the local database
 
 ```bash
 npx prisma migrate dev
 npx prisma generate
 ```
 
-### 4. Run the App
+### 4. Run the application
 
 ```bash
 npm run dev
 ```
 
-Open:
+Open [http://localhost:3000](http://localhost:3000).
 
-```text
-http://localhost:3000
+## Production Configuration
+
+The `.env` file on the EC2 server should contain production-only values:
+
+```env
+DATABASE_URL=postgresql://USER:PASSWORD@RDS_HOST:5432/postgres?sslmode=require
+GOOGLE_ID=your-production-google-client-id
+GOOGLE_SECRET=your-production-google-client-secret
+NEXTAUTH_SECRET=your-production-secret
+NEXTAUTH_URL=https://tradingweb.dev
+NEXT_PUBLIC_FINNHUB_TOKEN=your-finnhub-token
 ```
 
-## 🌐 App Routes
+The production Google OAuth application must include:
+
+```text
+Origin:       https://tradingweb.dev
+Redirect URI: https://tradingweb.dev/api/auth/callback/google
+```
+
+`NEXT_PUBLIC_*` variables are included in the browser build. Change them before running `npm run build`.
+
+## Does a Local Change Affect AWS?
+
+Not by itself. Editing files on your computer does not update the live AWS application.
+
+AWS changes only after the new code is:
+
+1. Committed and pushed to GitHub.
+2. Pulled onto the EC2 server.
+3. Built on EC2.
+4. Restarted with PM2.
+
+The usual deployment flow is:
+
+```bash
+cd ~/Trading-web
+git pull
+npm install
+npx prisma generate
+npm run build
+pm2 restart trading-web --update-env
+```
+
+Changing your local `.env` also does not change the EC2 `.env`. They are separate files. However, localhost can still access AWS RDS if its own `DATABASE_URL` points to RDS.
+
+## Checking the AWS Deployment
+
+SSH into EC2:
+
+```bash
+ssh -i ~/Downloads/tradingwebkey-2.pem ubuntu@13.43.121.177
+```
+
+### 1. Check the deployed Git version
+
+```bash
+cd ~/Trading-web
+git status
+git log -1 --oneline
+```
+
+Compare the commit with your local machine:
+
+```bash
+git log -1 --oneline
+```
+
+If the commit hashes differ, AWS is running different code.
+
+### 2. Check the application process
+
+```bash
+pm2 status
+pm2 logs trading-web --lines 100
+```
+
+Look for startup, database, authentication, or Finnhub-related errors.
+
+### 3. Check required environment variables safely
+
+Do not print secret values. Check only whether each variable is present:
+
+```bash
+cd ~/Trading-web
+for key in DATABASE_URL GOOGLE_ID GOOGLE_SECRET NEXTAUTH_SECRET NEXTAUTH_URL NEXT_PUBLIC_FINNHUB_TOKEN; do
+  grep -q "^${key}=" .env && echo "$key: set" || echo "$key: missing"
+done
+```
+
+Confirm the public URL without exposing secrets:
+
+```bash
+grep '^NEXTAUTH_URL=' .env
+```
+
+It should return:
+
+```text
+NEXTAUTH_URL=https://tradingweb.dev
+```
+
+### 4. Check the application and reverse proxy
+
+```bash
+curl -I http://localhost:3000
+curl -I https://tradingweb.dev
+sudo nginx -t
+sudo systemctl status nginx
+```
+
+### 5. Check production behavior in the browser
+
+Visit [https://tradingweb.dev](https://tradingweb.dev) and verify:
+
+- Google sign-in completes successfully.
+- The Market page receives changing prices.
+- A test order is accepted.
+- The Portfolio page displays the resulting holding.
+- Browser developer tools show no failed Finnhub WebSocket connection.
+
+Use a dedicated test account because production orders are stored in AWS RDS.
+
+## Routes
+
+### Pages
 
 | Route | Description |
 | --- | --- |
-| `/` | Landing page |
+| `/` | Home page |
 | `/market` | Live market prices |
-| `/orders` | Place buy/sell orders |
-| `/portfolio` | Holdings and P/L |
-| `/watchlist` | Watchlist UI |
+| `/orders` | Place simulated orders |
+| `/portfolio` | View holdings and profit/loss |
 
-## 🌐 API Routes
+### APIs
 
 | Method | Route | Description |
 | --- | --- | --- |
-| GET | `/api/portfolio` | Get holdings for current user |
-| POST | `/api/orders` | Place a buy/sell order |
-| GET/POST | `/api/auth/[...nextauth]` | NextAuth handlers |
+| `GET` | `/api/portfolio` | Return the signed-in user's holdings |
+| `POST` | `/api/orders` | Validate and process an order |
+| `GET`, `POST` | `/api/auth/[...nextauth]` | Authentication handlers |
 
-## 🗄️ Database Schema (Prisma)
+Portfolio and order APIs require an authenticated session.
 
-### User
-```prisma
-model User {
-  id            String   @id @default(cuid())
-  name          String?
-  email         String?  @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  holdings      Holding[]
-}
+## Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start local development |
+| `npm run build` | Create a production build |
+| `npm run start` | Start the production server |
+| `npm run lint` | Run ESLint |
+
+## Architecture
+
+```text
+Browser
+├── Next.js pages
+├── Finnhub WebSocket
+└── Next.js API routes
+    ├── NextAuth
+    ├── Zod validation
+    ├── Order domain service
+    └── Prisma
+        └── PostgreSQL
 ```
 
-### Holding
-```prisma
-model Holding {
-  id       String @id @default(cuid())
-  userId   String
-  symbol   String
-  quantity Int
-  avgPrice Float
+## Project Structure
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  @@unique([userId, symbol])
-}
-```
-
-## 🧱 Project Structure
-
-```
+```text
 src/
-├── app/            # Next.js routes and pages
-├── client/         # Client hooks and API wrappers
-├── domain/         # Domain models and errors
-├── server/         # Server-side services and auth
-├── shared/         # Shared types
-prisma/             # Prisma schema + migrations
+├── app/                 # Pages, layouts, and API routes
+├── client/
+│   ├── components/      # Client UI
+│   ├── hooks/           # Market, portfolio, and auth hooks
+│   └── services/        # API and WebSocket clients
+├── domain/              # Trading entities and business rules
+├── server/              # Auth, database, validation, and services
+└── shared/              # Shared constants and types
+prisma/
+├── migrations/
+└── schema.prisma
+deployment/
+└── deploy.md            # Full AWS deployment guide
 ```
 
-## 🔧 Architecture & Patterns
+## Security
 
-- **Domain‑driven structure** for core logic (`src/domain`).
-- **Service layer** for database updates (`src/server`).
-- **API routes** with centralized error handling (`withApiError`).
-- **Zod** for request validation.
+- Never commit `.env`, private keys, passwords, OAuth secrets, or database credentials.
+- Use separate local and production environment values.
+- Use SSL for the AWS RDS connection.
+- Use a test account when checking production orders.
+- Treat this project as a paper-trading demonstration, not a brokerage platform.
 
-## 🛡️ Error Handling & Validation
-
-### Error Response Shape
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid request",
-    "details": {}
-  }
-}
-```
-
-### Validation
-- Orders are validated with **Zod**.
-- Invalid requests return consistent `400` errors.
-
-## 🔒 Security Considerations
-
-- OAuth handled by **NextAuth**.
-- Sessions stored in Postgres via Prisma adapter.
-- Environment secrets validated at startup.
-
-## 📌 Notes
-
-- Market prices are simulated in‑memory for demo purposes.
-- Orders are processed per‑user and persisted in Postgres.
-
+For complete EC2, Nginx, HTTPS, PM2, and RDS instructions, see [deployment/deploy.md](deployment/deploy.md).
